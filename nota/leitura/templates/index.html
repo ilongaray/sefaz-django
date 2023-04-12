@@ -1,16 +1,93 @@
+<!-- index.html -->
+
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitura</title>
+    <title>Leitor de QRCode</title>
+    <meta charset="utf-8">
 </head>
 
 <body>
-    <h1>Teste</h1>
-    <a href="{% url 'exec_leitura' %}"><button>Executar Script</button></a>
+    <h1>Leitor de QRCode</h1>
+    <div>
+        <video id="video" width="640" height="480" autoplay></video>
+    </div>
+    <div>
+        <button id="startButton">Ler QRCode</button>
+        <button id="stopButton">Fechar Webcam</button>
+    </div>
+
+    <script src="https://github.com/LazarSoft/jsqrcode/blob/master/src/qrcode.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        let stream;
+
+        startButton.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                video.play();
+
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+
+                function draw() {
+                    requestAnimationFrame(draw);
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                }
+
+                function captureFrame() {
+                    if (canvas.width > 0 && canvas.height > 0) {
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+                        if (code) {
+                            console.log('QRCode lido:', code.data);
+                            video.pause();
+                            video.srcObject = null;
+                            canvas.style.display = 'none';
+                        } else {
+                            console.log('Não foi possível ler o QRCode.');
+                        }
+                    }
+                }
+
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    requestAnimationFrame(draw);
+                    setTimeout(() => {
+                        captureFrame();
+                    }, 1000); // aguarda 1 segundo antes de capturar a imagem da câmera
+                });
+
+                function stopCapture() {
+                    stream.getTracks().forEach(track => {
+                        track.stop();
+                    });
+                    video.srcObject = null;
+                    startButton.disabled = false;
+                    stopButton.disabled = true;
+                }
+
+                requestAnimationFrame(captureFrame);
+
+                stopButton.addEventListener('click', () => {
+                    stopCapture();
+                });
+
+            } catch (err) {
+                console.error('Erro ao acessar a câmera: ', err);
+            }
+        });
+    </script>
 </body>
 
 </html>

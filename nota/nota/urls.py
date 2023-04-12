@@ -19,5 +19,5 @@ from leitura import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", views.index, name='exec_leitura')
+    path("", views.index),
 ]
